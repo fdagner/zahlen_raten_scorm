@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <script src="scormdriver.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zahl raten – mit Punkten</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(to bottom, #e0f7fa, #80deea);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      background: white;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+      max-width: 600px;
+      width: 100%;
+    }
+    h1 {
+      color: #0277bd;
+      font-size: 2rem;
+      margin-bottom: 10px;
+    }
+    p {
+      color: #555;
+      font-size: 1rem;
+      margin-bottom: 15px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 5px;
+      margin: 20px auto;
+      max-width: 500px;
+    }
+    .kachel {
+      background: #f5f5f5;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 0.9rem;
+      position: relative;
+    }
+    .kachel:hover {
+      background: #e0f7fa;
+    }
+    .kachel.selected {
+      background: #0277bd;
+      color: white;
+    }
+    .kachel.clicked {
+      background: #fff9c4;
+      color: #555;
+      cursor: not-allowed;
+    }
+    .kachel.clicked::after {
+      content: "✕";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 1.2rem;
+      color: #b71c1c;
+    }
+    .kachel:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    button {
+      padding: 12px;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: none;
+      background: #0277bd;
+      color: white;
+      cursor: pointer;
+      margin: 10px;
+    }
+    button:hover {
+      background: #01579b;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    #nachricht {
+      margin-top: 15px;
+      font-weight: bold;
+      font-size: 1.1rem;
+      padding: 10px;
+      border-radius: 5px;
+      transition: background 0.3s;
+    }
+    .success { background: #c8e6c9; color: #2e7d32; }
+    .error { background: #ffcdd2; color: #c62828; }
+    .warning { background: #fff3cd; color: #856404; }
+    @media (max-width: 600px) {
+      .container {
+        padding: 15px;
+      }
+      h1 {
+        font-size: 1.6rem;
+      }
+      .grid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 4px;
+      }
+      .kachel {
+        padding: 8px;
+        font-size: 0.8rem;
+      }
+      button {
+        font-size: 0.9rem;
+        padding: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Zahl raten (1–100)</h1>
+    <p>Du hast 10 Versuche. Klick auf eine Zahl – je früher du triffst, desto mehr Punkte!</p>
+    <div class="grid" id="zahlenGrid"></div>
+    <button onclick="neuesSpiel()">Neustart</button>
+    <div id="nachricht"></div>
+  </div>
+
+  <script>
+    // Spiel-Variablen
+    let zufallszahl;
+    let versuche;
+    const maxVersuche = 10;
+    let spielVorbei = false;
+    let letzteMeldung = "";
+    let meldungZaehler = 0;
+    let geklickteZahlen = new Set(); // Verfolgt angeklickte Zahlen
+
+    // Zahlen-Kacheln erstellen
+    function erstelleZahlenGrid() {
+      const grid = document.getElementById("zahlenGrid");
+      grid.innerHTML = "";
+      for (let i = 1; i <= 100; i++) {
+        const kachel = document.createElement("div");
+        kachel.className = "kachel";
+        kachel.textContent = i;
+        kachel.onclick = () => rate(i);
+        if (geklickteZahlen.has(i)) {
+          kachel.classList.add("clicked");
+          kachel.disabled = true;
+        }
+        grid.appendChild(kachel);
+      }
+    }
+
+    function neuesSpiel() {
+      if (!SCORM.init()) {
+        alert("SCORM API nicht gefunden! Punkte werden nicht übertragen.");
+      }
+      zufallszahl = Math.floor(Math.random() * 100) + 1;
+      versuche = 0;
+      spielVorbei = false;
+      letzteMeldung = "";
+      meldungZaehler = 0;
+      geklickteZahlen.clear(); // Set zurücksetzen
+      const nachricht = document.getElementById("nachricht");
+      nachricht.textContent = "Viel Glück!";
+      nachricht.className = "";
+      erstelleZahlenGrid();
+    }
+
+    function spielBeenden(punkte) {
+      SCORM.setScore(punkte);
+      SCORM.setCompleted();
+      SCORM.finish();
+      // Deaktiviere alle Kacheln
+      document.querySelectorAll(".kachel").forEach(kachel => {
+        kachel.disabled = true;
+      });
+    }
+
+ function rate(zahl) {
+  if (spielVorbei || geklickteZahlen.has(zahl)) return;
+
+  // Markiere die angeklickte Zahl
+  geklickteZahlen.add(zahl);
+  document.querySelectorAll(".kachel").forEach(kachel => {
+    kachel.classList.remove("selected");
+    if (parseInt(kachel.textContent) === zahl) {
+      kachel.classList.add("clicked");
+      kachel.disabled = true;
+    }
+  });
+
+  const nachricht = document.getElementById("nachricht");
+  versuche++;
+  let aktuelleMeldung = "";
+  let basisMeldung = ""; // Für Vergleich der Basisnachricht
+
+  if (zahl < zufallszahl) {
+    basisMeldung = "Zu niedrig!";
+    aktuelleMeldung = meldungZaehler > 0 && letzteMeldung === "Zu niedrig!" 
+      ? `Nochmal zu niedrig! (${meldungZaehler + 1}x)` 
+      : "Zu niedrig!";
+    nachricht.className = "error";
+  } else if (zahl > zufallszahl) {
+    basisMeldung = "Zu hoch!";
+    aktuelleMeldung = meldungZaehler > 0 && letzteMeldung === "Zu hoch!" 
+      ? `Schon wieder zu hoch! (${meldungZaehler + 1}x)` 
+      : "Zu hoch!";
+    nachricht.className = "error";
+  } else {
+    const punkte = Math.max(11 - versuche, 0);
+    aktuelleMeldung = `Richtig! Die Zahl war ${zufallszahl}. Du bekommst ${punkte} Punkte.`;
+    nachricht.className = "success";
+    spielVorbei = true;
+    spielBeenden(punkte);
+  }
+
+  if (versuche >= maxVersuche && !spielVorbei) {
+    aktuelleMeldung = `Leider verloren! Die Zahl war ${zufallszahl}. 0 Punkte.`;
+    basisMeldung = "";
+    nachricht.className = "error";
+    spielVorbei = true;
+    spielBeenden(0);
+  }
+
+  // Rückmeldung aktualisieren
+  if (basisMeldung === "Zu niedrig!" || basisMeldung === "Zu hoch!") {
+    if (basisMeldung === letzteMeldung) {
+      meldungZaehler++;
+    } else {
+      meldungZaehler = 0;
+    }
+  } else {
+    meldungZaehler = 0;
+  }
+  nachricht.textContent = aktuelleMeldung;
+  letzteMeldung = basisMeldung || aktuelleMeldung;
+
+  // Variierte Texte für Abwechslung
+  if (meldungZaehler >= 2) {
+    const variationenNiedrig = ["Immer noch zu niedrig!", "Noch ein Stück höher!", "Versuch’s mal höher!"];
+    const variationenHoch = ["Immer noch zu hoch!", "Noch ein Stück niedriger!", "Versuch’s mal niedriger!"];
+    if (letzteMeldung === "Zu niedrig!") {
+      nachricht.textContent = `${variationenNiedrig[Math.floor(Math.random() * variationenNiedrig.length)]} (${meldungZaehler + 1}x)`;
+    } else if (letzteMeldung === "Zu hoch!") {
+      nachricht.textContent = `${variationenHoch[Math.floor(Math.random() * variationenHoch.length)]} (${meldungZaehler + 1}x)`;
+    }
+  }
+}
+    window.onload = neuesSpiel;
+    window.onunload = function () {
+      SCORM.finish();
+    };
+  </script>
+</body>
+</html>

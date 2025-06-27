@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest identifier="ZahlRatenSCORM" version="1.0"
+  xmlns="http://www.imsproject.org/xsd/imscp_rootv1p1p2"
+  xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_rootv1p2"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.imsproject.org/xsd/imscp_rootv1p1p2
+                      imscp_rootv1p1p2.xsd
+                      http://www.adlnet.org/xsd/adlcp_rootv1p2
+                      adlcp_rootv1p2.xsd">
+  <organizations default="ZahlRatenOrg">
+    <organization identifier="ZahlRatenOrg">
+      <title>Zahl Raten Spiel</title>
+      <item identifier="ZahlRatenItem" identifierref="ZahlRatenRes">
+        <title>Zahl Raten (SCORM)</title>
+      </item>
+    </organization>
+  </organizations>
+
+  <resources>
+    <resource identifier="ZahlRatenRes" type="webcontent" adlcp:scormtype="sco" href="index.html">
+      <file href="index.html"/>
+      <file href="scormdriver.js"/>
+    </resource>
+  </resources>
+</manifest>
